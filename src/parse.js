@@ -59,7 +59,7 @@ function expressionInputDirtyCheck(newValue, oldValue) {
     return newValue === oldValue ||
         (typeof newValue === 'number' && typeof oldValue === 'number' &&
         isNaN(newValue) && isNaN(oldValue));
-};
+}
 
 function oneTimeLiteralWatchDelegate(scope, listenerFn, valueEq, watchFn) {
     function isAllDefined(val) {
