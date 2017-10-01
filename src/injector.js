@@ -9,18 +9,20 @@ var INSTANTIATING = {};
 
 function createInjector(modulesToLoad, strictDi) {
     var providerCache = {};
-    var providerInjector = createInternalInjector(providerCache, function () {
-        throw 'Unknown provider: ' + path.join(' <- ');
-    });
+    var providerInjector = providerCache.$injector =
+        createInternalInjector(providerCache, function () {
+            throw 'Unknown provider: ' + path.join(' <- ');
+        });
     var instanceCache = {};
-    var instanceInjector = createInternalInjector(instanceCache, function (name) {
-        var provider = providerInjector.get(name + 'Provider');
-        return instanceInjector.invoke(provider.$get, provider);
-    });
+    var instanceInjector = instanceCache.$injector =
+        createInternalInjector(instanceCache, function (name) {
+            var provider = providerInjector.get(name + 'Provider');
+            return instanceInjector.invoke(provider.$get, provider);
+        });
     var loadedModules = {};
     var path = [];
     strictDi = (strictDi === true);
-    var $provide = {
+    providerCache.$provide = {
         constant: function (key, value) {
             if (key === 'hasOwnProperty') {
                 throw 'hasOwnProperty is not a valid constant name!';
@@ -121,7 +123,7 @@ function createInjector(modulesToLoad, strictDi) {
             _.forEach(module._invokeQueue, function (invokeArgs) {
                 var method = invokeArgs[0];
                 var args = invokeArgs[1];
-                $provide[method].apply($provide, args);
+                providerCache.$provide[method].apply(providerCache.$provide, args);
             });
         }
     });
