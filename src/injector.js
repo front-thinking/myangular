@@ -10,20 +10,34 @@ var STRIP_COMMENTS = /(\/\/.*$)|(\/\*.*?\*\/)/mg;
 var INSTANTIATING = {};
 
 function createInjector(modulesToLoad, strictDi) {
+
     var providerCache = {};
     var providerInjector = providerCache.$injector =
         createInternalInjector(providerCache, function () {
             throw 'Unknown provider: ' + path.join(' <- ');
         });
+
     var instanceCache = {};
     var instanceInjector = instanceCache.$injector =
         createInternalInjector(instanceCache, function (name) {
             var provider = providerInjector.get(name + 'Provider');
             return instanceInjector.invoke(provider.$get, provider);
         });
+
     var loadedModules = new HashMap();
     var path = [];
     strictDi = (strictDi === true);
+
+    function enforceReturnValue(factoryFn) {
+        return function () {
+            var value = instanceInjector.invoke(factoryFn);
+            if (_.isUndefined(value)) {
+                throw 'factory must return a value';
+            }
+            return value;
+        };
+    }
+
     providerCache.$provide = {
         constant: function (key, value) {
             if (key === 'hasOwnProperty') {
@@ -37,6 +51,9 @@ function createInjector(modulesToLoad, strictDi) {
                 provider = providerInjector.instantiate(provider);
             }
             providerCache[key + 'Provider'] = provider;
+        },
+        factory: function (key, factoryFn) {
+            this.provider(key, {$get: enforceReturnValue(factoryFn)});
         }
     };
 
