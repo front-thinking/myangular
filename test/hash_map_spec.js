@@ -7,8 +7,6 @@ var HashMap = require('../src/hash_map').HashMap;
 
 describe('hash', function () {
 
-    'use strict';
-
     describe('hashKey', function () {
 
         it('is undefined:undefined for undefined', function () {
