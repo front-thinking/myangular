@@ -11,9 +11,27 @@ describe('angularPublic', function () {
         expect(window.angular.module).toBeDefined();
     });
 
-    it('sets up the ng module', function() {
+    it('sets up the ng module', function () {
         publishExternalAPI();
         expect(createInjector(['ng'])).toBeDefined();
+    });
+
+    it('sets up the $filter service', function () {
+        publishExternalAPI();
+        var injector = createInjector(['ng']);
+        expect(injector.has('$filter')).toBe(true);
+    });
+
+    it('sets up the $parse service', function () {
+        publishExternalAPI();
+        var injector = createInjector(['ng']);
+        expect(injector.has('$parse')).toBe(true);
+    });
+
+    it('sets up the $rootScope', function () {
+        publishExternalAPI();
+        var injector = createInjector(['ng']);
+        expect(injector.has('$rootScope')).toBe(true);
     });
 
 });
