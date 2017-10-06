@@ -132,6 +132,12 @@ function $QProvider() {
             return new Deferred();
         }
 
+        function when(value, callback, errback, progressback) {
+            var d = defer();
+            d.resolve(value);
+            return d.promise.then(callback, errback, progressback);
+        }
+
         function reject(rejection) {
             var d = defer();
             d.reject(rejection);
@@ -140,7 +146,9 @@ function $QProvider() {
 
         return {
             defer: defer,
-            reject: reject
+            reject: reject,
+            when: when,
+            resolve: when
         };
 
     }];
