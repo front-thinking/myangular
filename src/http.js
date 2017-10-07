@@ -32,6 +32,8 @@ function $HttpProvider() {
         paramSerializer: '$httpParamSerializer'
     };
 
+    var interceptorFactories = this.interceptors = [];
+
     function defaultHttpResponseTransform(data, headers) {
         if (_.isString(data)) {
             var contentType = headers('Content-Type');
@@ -142,6 +144,11 @@ function $HttpProvider() {
     this.$get = ['$httpBackend', '$q', '$rootScope', '$injector',
         function ($httpBackend, $q, $rootScope, $injector) {
 
+            var interceptors = _.map(interceptorFactories, function (fn) {
+                return _.isString(fn) ? $injector.get(fn) :
+                    $injector.invoke(fn);
+            });
+
             function sendReq(config, reqData) {
                 var deferred = $q.defer();
 
@@ -173,19 +180,8 @@ function $HttpProvider() {
                 return deferred.promise;
             }
 
-            function $http(requestConfig) {
+            function serverRequest(config) {
 
-
-                var config = _.extend({
-                    method: 'GET',
-                    transformRequest: defaults.transformRequest,
-                    transformResponse: defaults.transformResponse,
-                    paramSerializer: defaults.paramSerializer
-                }, requestConfig);
-                config.headers = mergeHeaders(requestConfig);
-                if (_.isString(config.paramSerializer)) {
-                    config.paramSerializer = $injector.get(config.paramSerializer);
-                }
                 if (_.isUndefined(config.withCredentials) &&
                     !_.isUndefined(defaults.withCredentials)) {
                     config.withCredentials = defaults.withCredentials;
@@ -224,6 +220,34 @@ function $HttpProvider() {
 
                 return sendReq(config, reqData)
                     .then(transformResponse, transformResponse);
+            }
+
+
+            function $http(requestConfig) {
+
+                var config = _.extend({
+                    method: 'GET',
+                    transformRequest: defaults.transformRequest,
+                    transformResponse: defaults.transformResponse,
+                    paramSerializer: defaults.paramSerializer
+                }, requestConfig);
+
+                if (_.isString(config.paramSerializer)) {
+                    config.paramSerializer = $injector.get(config.paramSerializer);
+                }
+
+                config.headers = mergeHeaders(requestConfig);
+
+                var promise = $q.when(config);
+                _.forEach(interceptors, function (interceptor) {
+                    promise = promise.then(interceptor.request, interceptor.requestError);
+                });
+                promise = promise.then(serverRequest);
+                _.forEachRight(interceptors, function (interceptor) {
+                    promise = promise.then(interceptor.response, interceptor.responseError);
+                });
+                return promise;
+
             }
 
             $http.defaults = defaults;
