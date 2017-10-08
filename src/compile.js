@@ -45,7 +45,7 @@ function $CompileProvider($provide) {
 
         function collectDirectives(node) {
             var directives = [];
-            var normalizedNodeName = _.camelCase(nodeName(node).toLowerCase());
+            var normalizedNodeName = directiveNormalize(nodeName(node).toLowerCase());
             addDirective(directives, normalizedNodeName);
             return directives;
         }
@@ -76,5 +76,12 @@ function $CompileProvider($provide) {
 }
 
 $CompileProvider.$inject = ['$provide'];
+
+
+var PREFIX_REGEXP = /(x[\:\-_]|data[\:\-_])/i;
+
+function directiveNormalize(name) {
+    return _.camelCase(name.replace(PREFIX_REGEXP, ''));
+}
 
 module.exports = $CompileProvider;
