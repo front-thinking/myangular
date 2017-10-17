@@ -1036,6 +1036,7 @@ describe('$compile', function () {
 
         describe('linking', function () {
 
+
             it('takes a scope and attaches it to elements', function () {
                 var injector = makeInjectorWithDirectives('myDirective', function () {
                     return {compile: _.noop};
@@ -1067,6 +1068,62 @@ describe('$compile', function () {
                     expect(givenElement[0]).toBe(el[0]);
                     expect(givenAttrs).toBeDefined();
                     expect(givenAttrs.myDirective).toBeDefined();
+                });
+            });
+
+            it('supports link function in directive definition object', function () {
+                var givenScope, givenElement, givenAttrs;
+                var injector = makeInjectorWithDirectives('myDirective', function () {
+                    return {
+                        link: function (scope, element, attrs) {
+                            givenScope = scope;
+                            givenElement = element;
+                            givenAttrs = attrs;
+                        }
+                    };
+                });
+                injector.invoke(function ($compile, $rootScope) {
+                    var el = $('<div my-directive></div>');
+                    $compile(el)($rootScope);
+                    expect(givenScope).toBe($rootScope);
+                    expect(givenElement[0]).toBe(el[0]);
+                    expect(givenAttrs).toBeDefined();
+                    expect(givenAttrs.myDirective).toBeDefined();
+                });
+            });
+
+            it('links directive on child elements first', function () {
+                var givenElements = [];
+                var injector = makeInjectorWithDirectives('myDirective', function () {
+                    return {
+                        link: function (scope, element, attrs) {
+                            givenElements.push(element);
+                        }
+                    };
+                });
+                injector.invoke(function ($compile, $rootScope) {
+                    var el = $('<div my-directive><div my-directive></div></div>');
+                    $compile(el)($rootScope);
+                    expect(givenElements.length).toBe(2);
+                    expect(givenElements[0][0]).toBe(el[0].firstChild);
+                    expect(givenElements[1][0]).toBe(el[0]);
+                });
+            });
+
+            it('links children when parent has no directives', function () {
+                var givenElements = [];
+                var injector = makeInjectorWithDirectives('myDirective', function () {
+                    return {
+                        link: function (scope, element, attrs) {
+                            givenElements.push(element);
+                        }
+                    };
+                });
+                injector.invoke(function ($compile, $rootScope) {
+                    var el = $('<div><div my-directive></div></div>');
+                    $compile(el)($rootScope);
+                    expect(givenElements.length).toBe(1);
+                    expect(givenElements[0][0]).toBe(el[0].firstChild);
                 });
             });
 

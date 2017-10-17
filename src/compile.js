@@ -20,6 +20,9 @@ function $CompileProvider($provide) {
                         var directive = $injector.invoke(factory);
                         directive.restrict = directive.restrict || 'EA';
                         directive.priority = directive.priority || 0;
+                        if (directive.link && !directive.compile) {
+                            directive.compile = _.constant(directive.link);
+                        }
                         directive.name = directive.name || name;
                         directive.index = i;
                         return directive;
@@ -33,6 +36,7 @@ function $CompileProvider($provide) {
             }, this));
         }
     };
+
 
     this.$get = ['$injector', '$rootScope', function ($injector, $rootScope) {
 
@@ -126,18 +130,32 @@ function $CompileProvider($provide) {
                 }
                 if ((!nodeLinkFn || !nodeLinkFn.terminal) &&
                     node.childNodes && node.childNodes.length) {
-                    compileNodes(node.childNodes);
+                    childLinkFn = compileNodes(node.childNodes);
                 }
-                if (nodeLinkFn) {
+                var childLinkFn;
+                if (nodeLinkFn || childLinkFn) {
                     linkFns.push({
                         nodeLinkFn: nodeLinkFn,
+                        childLinkFn: childLinkFn,
                         idx: i
                     });
                 }
             });
+
             function compositeLinkFn(scope, linkNodes) {
                 _.forEach(linkFns, function (linkFn) {
-                    linkFn.nodeLinkFn(scope, linkNodes[linkFn.idx]);
+                    if (linkFn.nodeLinkFn) {
+                        linkFn.nodeLinkFn(
+                            linkFn.childLinkFn,
+                            scope,
+                            linkNodes[linkFn.idx]
+                        );
+                    } else {
+                        linkFn.childLinkFn(
+                            scope,
+                            linkNodes[linkFn.idx].childNodes
+                        );
+                    }
                 });
             }
 
@@ -290,7 +308,10 @@ function $CompileProvider($provide) {
                 }
             });
 
-            function nodeLinkFn(scope, linkNode) {
+            function nodeLinkFn(childLinkFn, scope, linkNode) {
+                if (childLinkFn) {
+                    childLinkFn(scope, linkNode.childNodes);
+                }
                 _.forEach(linkFns, function (linkFn) {
                     var $element = $(linkNode);
                     linkFn(scope, $element, attrs);
@@ -304,7 +325,6 @@ function $CompileProvider($provide) {
         return compile;
 
     }];
-
 }
 
 $CompileProvider.$inject = ['$provide'];
